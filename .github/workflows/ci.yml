@@ -42,7 +42,7 @@ jobs:
     # 6. Build Docker Image
     - name: Build Docker Image
       run: |
-        mlflow models build-docker -m "runs:/${{ env.RUN_ID }}/model" -n "cc"
+        mlflow models build-docker -m "runs:/${RUN_ID}/model" -n "cc"
 
     # 7. Login ke Docker Hub (Update ke v3)
     - name: Login to Docker Hub
