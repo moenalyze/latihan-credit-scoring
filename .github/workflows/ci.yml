@@ -32,7 +32,12 @@ jobs:
 
     # 4. Training Model
     - name: Run MLflow Project
-      run: mlflow run . --env-manager=local
+      run: |
+        # Hapus folder mlruns lama yang rusak dari repo
+        if [ -d "mlruns" ]; then rm -rf mlruns; fi
+        
+        # Jalankan training baru
+        mlflow run . --env-manager=local
 
     # 5. Ambil Run ID
     - name: Get Latest Run ID
