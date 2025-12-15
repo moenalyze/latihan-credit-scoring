@@ -1,0 +1,13 @@
+# Folder MLflow (Wajib di-ignore biar gak error kayak tadi)
+mlruns/
+mlflow.db
+
+# Python cache (Sampah sistem)
+__pycache__/
+*.pyc
+
+# Environment (Kalau ada folder env lokal)
+.env
+venv/
+env/
+.ipynb_checkpoints/
