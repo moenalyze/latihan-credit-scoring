@@ -1,44 +1,60 @@
-name: CI Training Credit Scoring
+name: CI/CD MLflow
 
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CSV_URL: train_pca.csv
+  TARGET_VAR: Target
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: write 
 
     steps:
-    - uses: actions/checkout@v4
+    # 1. Checkout Kode dari Repo
+    - uses: actions/checkout@v3
 
-    - name: Set up Python 3.12
+    # 2. Siapkan Python
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.12"
+        python-version: '3.9'
 
+    # 3. Install Dependensi (MLflow)
     - name: Install dependencies
       run: |
-        pip install mlflow pandas scikit-learn numpy joblib psutil scipy
+        python -m pip install --upgrade pip
+        pip install mlflow
 
-    # Training Model
+    # 4. Training Model (Jalanin MLflow Project)
     - name: Run MLflow Project
       run: mlflow run . --env-manager=local
 
-    - name: Commit & Push Result (With LFS)
+    # 5. Ambil Run ID Eksperimen Terakhir (Otomatis)
+    - name: Get Latest Run ID
       run: |
-        git config --global user.name "GitHub Actions Bot"
-        git config --global user.email "actions@github.com"
-        
-        git lfs install
-        git lfs track "*.pkl"
-        git add .gitattributes
-        
-        # Masukkan hasil training (mlruns)
-        git add mlruns/
-        
-        # Commit & Push
-        git commit -m "Auto-commit: Update hasil training [skip ci]" || echo "No changes to commit"
-        git push
+        echo "RUN_ID=$(ls -t mlruns/0 | head -n 1)" >> $GITHUB_ENV
+
+    # 6. Build Docker Image (Paketkan Model jadi Image 'cc')
+    - name: Build Docker Image
+      run: |
+        mlflow models build-docker -m "runs:/${{ env.RUN_ID }}/model" -n "cc"
+
+    # 7. Login ke Docker Hub (Pakai Secrets)
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    # 8. Kasih Label (Tag) ke Image
+    - name: Tag Docker Image
+      run: docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
+
+    # 9. Upload (Push) ke Docker Hub
+    - name: Push Docker Image
+      run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
