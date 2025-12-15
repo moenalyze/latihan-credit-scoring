@@ -1,0 +1,44 @@
+name: CI Training Credit Scoring
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write 
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: |
+        pip install mlflow pandas scikit-learn numpy joblib psutil scipy
+
+    # Training Model
+    - name: Run MLflow Project
+      run: mlflow run . --env-manager=local
+
+    - name: Commit & Push Result (With LFS)
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        
+        git lfs install
+        git lfs track "*.pkl"
+        git add .gitattributes
+        
+        # Masukkan hasil training (mlruns)
+        git add mlruns/
+        
+        # Commit & Push
+        git commit -m "Auto-commit: Update hasil training [skip ci]" || echo "No changes to commit"
+        git push
